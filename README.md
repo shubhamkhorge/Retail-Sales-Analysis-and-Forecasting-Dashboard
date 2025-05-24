@@ -82,8 +82,8 @@ This project has also been tested with the **"Store Sales - Time Series Forecast
 ## 7. Setup and Installation
 1.  **Clone the Repository (if applicable) or Download Files:**
     ```bash
-    git clone [your-repository-link]
-    cd [repository-name]
+    git clone (https://github.com/shubhamkhorge/Retail-Sales-Analysis-and-Forecasting-Dashboard.git)
+    cd 
     ```
     Or ensure all project files are in a single directory.
 
