@@ -1,0 +1,12 @@
+# Data files - should be generated locally
+train.csv
+temp_dashboard_data.csv
+
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# Optional: ignore all CSV files in the root if they are all data/temp
+ *.csv
+
