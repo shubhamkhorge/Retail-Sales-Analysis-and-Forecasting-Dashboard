@@ -1,2 +1,19 @@
 [tool.black]
 line_length = 111
+[project]
+name = "retail-dashboard"
+version = "0.1"
+description = ""
+authors = [
+    {name = "shubham khorge"}
+]
+license = {text = "mit"}
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
