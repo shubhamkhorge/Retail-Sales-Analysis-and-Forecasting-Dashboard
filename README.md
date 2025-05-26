@@ -1,3 +1,8 @@
+![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)
+![CI](https://github.com/shubhamkhorge/Retail-Sales-Analysis-and-Forecasting-Dashboard/actions/workflows/ci.yml/badge.svg)
+![Coverage](https://coveralls.io/repos/github/shubhamkhorge/Retail-Sales-Analysis-and-Forecasting-Dashboard/badge.svg)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/shubhamkhorge/Retail-Sales-Analysis-and-Forecasting-Dashboard)
+
 # Retail Sales Analysis and Forecasting Dashboard
 
 ## Table of Contents
