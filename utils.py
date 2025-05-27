@@ -56,9 +56,7 @@ def plot_feature_importance(model, feature_names, top_n=20, save_path=None):
         plt.figure(figsize=(12, 8))
         plt.title(f"Top {top_n} Feature Importances")
         plt.bar(range(top_n), importances[indices])
-        plt.xticks(
-            range(top_n), [feature_names[i] for i in indices], rotation=45, ha="right"
-        )
+        plt.xticks(range(top_n), [feature_names[i] for i in indices], rotation=45, ha="right")
         plt.ylabel("Importance")
         plt.tight_layout()
 
@@ -112,14 +110,10 @@ def plot_sales_trends(df, date_col="Date", sales_col="Sales", freq="D", save_pat
         trend_data = df_copy.groupby(df_copy[date_col].dt.date)[sales_col].sum()
         title = "Daily Sales Trend"
     elif freq == "W":
-        trend_data = df_copy.groupby(df_copy[date_col].dt.to_period("W"))[
-            sales_col
-        ].sum()
+        trend_data = df_copy.groupby(df_copy[date_col].dt.to_period("W"))[sales_col].sum()
         title = "Weekly Sales Trend"
     elif freq == "M":
-        trend_data = df_copy.groupby(df_copy[date_col].dt.to_period("M"))[
-            sales_col
-        ].sum()
+        trend_data = df_copy.groupby(df_copy[date_col].dt.to_period("M"))[sales_col].sum()
         title = "Monthly Sales Trend"
     else:
         raise ValueError("Frequency must be 'D', 'W', or 'M'")

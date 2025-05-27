@@ -1,4 +1,7 @@
 # Main analysis and forecasting script
+from config import Config  # To access PLOTS_DIR and MODELS_DIR
+import os
+from utils import save_model # To use your existing save_model utility
 
 import pandas as pd
 import numpy as np
@@ -9,8 +12,9 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-#logging
+# logging
 import logging
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 # Machine Learning imports
@@ -77,12 +81,8 @@ class RetailSalesAnalyzer:
             logging.info("\nSummary Statistics:")
             # Describe only numeric columns, include datetime for date range
             logging.info(self.df.describe(include=[np.number]))
-            if "Date" in self.df.columns and pd.api.types.is_datetime64_any_dtype(
-                self.df["Date"]
-            ):
-                logging.info(
-                    f"\nDate Range: {self.df['Date'].min()} to {self.df['Date'].max()}"
-                )
+            if "Date" in self.df.columns and pd.api.types.is_datetime64_any_dtype(self.df["Date"]):
+                logging.info(f"\nDate Range: {self.df['Date'].min()} to {self.df['Date'].max()}")
             return True
         except FileNotFoundError:
             logging.info(f"Error: {self.data_path} not found!")
@@ -111,9 +111,7 @@ class RetailSalesAnalyzer:
             start_date = datetime(2020, 1, 1)
             end_date = datetime(2023, 12, 31)
             # Ensure dates are pd.Timestamp for consistency
-            dates = pd.to_datetime(
-                pd.date_range(start_date, end_date, periods=n_records)
-            )
+            dates = pd.to_datetime(pd.date_range(start_date, end_date, periods=n_records))
 
             data = {
                 "Date": dates,  # Already datetime
@@ -129,19 +127,13 @@ class RetailSalesAnalyzer:
             seasonal_multiplier = 1 + 0.3 * np.sin(2 * np.pi * df_temp["Month"] / 12)
             weekend_multiplier = np.where(df_temp["DayOfWeek"].isin([5, 6]), 1.2, 1.0)
 
-            df_temp["Sales"] = (
-                df_temp["Sales"] * seasonal_multiplier * weekend_multiplier
-            )
+            df_temp["Sales"] = df_temp["Sales"] * seasonal_multiplier * weekend_multiplier
             df_temp["Sales"] = df_temp["Sales"].round(2)
 
-            df_temp["Category"] = np.random.choice(
-                ["Electronics", "Clothing", "Food", "Home"], n_records
-            )
+            df_temp["Category"] = np.random.choice(["Electronics", "Clothing", "Food", "Home"], n_records)
             df_temp["Promotion"] = np.random.choice([0, 1], n_records, p=[0.8, 0.2])
 
-            self.df = df_temp[
-                ["Date", "Store", "Item", "Category", "Promotion", "Sales"]
-            ]
+            self.df = df_temp[["Date", "Store", "Item", "Category", "Promotion", "Sales"]]
             # Ensure 'Date' is datetime, should be already from pd.date_range
             self.df["Date"] = pd.to_datetime(self.df["Date"])
             return True
@@ -161,9 +153,7 @@ class RetailSalesAnalyzer:
         logging.info("=" * 50)
 
         # Ensure Date column is datetime (should be from load_data)
-        if "Date" not in self.df.columns or not pd.api.types.is_datetime64_any_dtype(
-            self.df["Date"]
-        ):
+        if "Date" not in self.df.columns or not pd.api.types.is_datetime64_any_dtype(self.df["Date"]):
             logging.info("Date column is missing or not in datetime format for EDA.")
             return
 
@@ -179,12 +169,8 @@ class RetailSalesAnalyzer:
             axes[0, 0].set_ylabel("Frequency")
 
         # 2. Sales over time
-        daily_sales = (
-            self.df.groupby(self.df["Date"].dt.date)["Sales"].sum().reset_index()
-        )
-        daily_sales["Date"] = pd.to_datetime(
-            daily_sales["Date"]
-        )  # Ensure Date is datetime for plotting
+        daily_sales = self.df.groupby(self.df["Date"].dt.date)["Sales"].sum().reset_index()
+        daily_sales["Date"] = pd.to_datetime(daily_sales["Date"])  # Ensure Date is datetime for plotting
         axes[0, 1].plot(daily_sales["Date"], daily_sales["Sales"], alpha=0.7)
         axes[0, 1].set_title("Sales Over Time")
         axes[0, 1].set_xlabel("Date")
@@ -193,12 +179,7 @@ class RetailSalesAnalyzer:
 
         # 3. Sales by Store (top 10)
         if "Store" in self.df.columns:
-            store_sales = (
-                self.df.groupby("Store")["Sales"]
-                .sum()
-                .sort_values(ascending=False)
-                .head(10)
-            )
+            store_sales = self.df.groupby("Store")["Sales"].sum().sort_values(ascending=False).head(10)
             axes[0, 2].bar(
                 store_sales.index.astype(str), store_sales.values, color="lightcoral"
             )  # Use store IDs as strings for labels
@@ -212,9 +193,7 @@ class RetailSalesAnalyzer:
             "Date"
         ].dt.month  # Use a different name to avoid conflict if 'Month' column exists
         monthly_sales = self.df.groupby("Month_Num")["Sales"].mean()
-        axes[1, 0].plot(
-            monthly_sales.index, monthly_sales.values, marker="o", color="green"
-        )
+        axes[1, 0].plot(monthly_sales.index, monthly_sales.values, marker="o", color="green")
         axes[1, 0].set_title("Average Sales by Month")
         axes[1, 0].set_xlabel("Month")
         axes[1, 0].set_ylabel("Average Sales")
@@ -224,20 +203,11 @@ class RetailSalesAnalyzer:
         if "Category" in self.df.columns:
             cat_sales = self.df.groupby("Category")["Sales"].sum()
             if not cat_sales.empty:
-                axes[1, 1].pie(
-                    cat_sales.values, labels=cat_sales.index, autopct="%1.1f%%"
-                )
+                axes[1, 1].pie(cat_sales.values, labels=cat_sales.index, autopct="%1.1f%%")
                 axes[1, 1].set_title("Sales by Category")
         elif "Item" in self.df.columns:  # Alternative if Category doesn't exist
-            item_sales = (
-                self.df.groupby("Item")["Sales"]
-                .sum()
-                .sort_values(ascending=False)
-                .head(10)
-            )
-            axes[1, 1].bar(
-                item_sales.index.astype(str), item_sales.values, color="orange"
-            )
+            item_sales = self.df.groupby("Item")["Sales"].sum().sort_values(ascending=False).head(10)
+            axes[1, 1].bar(item_sales.index.astype(str), item_sales.values, color="orange")
             axes[1, 1].set_title("Top 10 Items by Sales")
             axes[1, 1].set_xlabel("Item ID")
             axes[1, 1].set_ylabel("Total Sales")
@@ -261,9 +231,14 @@ class RetailSalesAnalyzer:
         axes[1, 2].set_ylabel("Average Sales")
         axes[1, 2].tick_params(axis="x", rotation=45)
 
-        plt.tight_layout(
-            rect=[0, 0, 1, 0.96]
-        )  # Adjust layout to prevent suptitle overlap
+        plt.tight_layout(rect=[0, 0, 1, 0.96])  # Adjust layout to prevent suptitle overlap
+        try:
+                plot_filename = os.path.join(Config.PLOTS_DIR, "eda_summary_plots.png")
+                fig.savefig(plot_filename, dpi=300, bbox_inches='tight')
+                print(f"✓ EDA summary plot saved to {plot_filename}")
+        except Exception as e:
+                print(f"✗ Error saving EDA plot: {e}")
+        
         plt.show()
 
         # logging.info key insights
@@ -272,15 +247,9 @@ class RetailSalesAnalyzer:
         logging.info(
             f"• Average Daily Sales (overall mean): ${self.df['Sales'].mean():.2f}"
         )  # Clarify this is overall transaction mean
-        logging.info(
-            f"• Sales Range: ${self.df['Sales'].min():.2f} - ${self.df['Sales'].max():.2f}"
-        )
-        logging.info(
-            f"• Date Range: {self.df['Date'].min().date()} to {self.df['Date'].max().date()}"
-        )
-        logging.info(
-            f"• Total Days in Data: {(self.df['Date'].max() - self.df['Date'].min()).days}"
-        )
+        logging.info(f"• Sales Range: ${self.df['Sales'].min():.2f} - ${self.df['Sales'].max():.2f}")
+        logging.info(f"• Date Range: {self.df['Date'].min().date()} to {self.df['Date'].max().date()}")
+        logging.info(f"• Total Days in Data: {(self.df['Date'].max() - self.df['Date'].min()).days}")
 
     def feature_engineering(self):
         """Create features for machine learning models"""
@@ -295,30 +264,21 @@ class RetailSalesAnalyzer:
         self.processed_df = self.df.copy()
 
         # Ensure Date column exists and is datetime
-        if (
-            "Date" not in self.processed_df.columns
-            or not pd.api.types.is_datetime64_any_dtype(self.processed_df["Date"])
+        if "Date" not in self.processed_df.columns or not pd.api.types.is_datetime64_any_dtype(
+            self.processed_df["Date"]
         ):
-            logging.info(
-                "Date column is missing or not in datetime format for feature engineering."
-            )
+            logging.info("Date column is missing or not in datetime format for feature engineering.")
             return None
 
         # Time-based features
         self.processed_df["Year"] = self.processed_df["Date"].dt.year
         self.processed_df["Month"] = self.processed_df["Date"].dt.month
         self.processed_df["Day"] = self.processed_df["Date"].dt.day
-        self.processed_df["DayOfWeek"] = self.processed_df[
-            "Date"
-        ].dt.dayofweek  # Numeric (0=Mon, 6=Sun)
+        self.processed_df["DayOfWeek"] = self.processed_df["Date"].dt.dayofweek  # Numeric (0=Mon, 6=Sun)
         self.processed_df["DayOfYear"] = self.processed_df["Date"].dt.dayofyear
-        self.processed_df["WeekOfYear"] = (
-            self.processed_df["Date"].dt.isocalendar().week.astype(int)
-        )
+        self.processed_df["WeekOfYear"] = self.processed_df["Date"].dt.isocalendar().week.astype(int)
         self.processed_df["Quarter"] = self.processed_df["Date"].dt.quarter
-        self.processed_df["IsWeekend"] = (self.processed_df["DayOfWeek"] >= 5).astype(
-            int
-        )
+        self.processed_df["IsWeekend"] = (self.processed_df["DayOfWeek"] >= 5).astype(int)
 
         logging.info("✓ Time-based features created")
 
@@ -330,28 +290,22 @@ class RetailSalesAnalyzer:
         if "Item" in self.processed_df.columns:
             group_cols.append("Item")
 
-        if (
-            group_cols and "Sales" in self.processed_df.columns
-        ):  # Check if 'Sales' exists
+        if group_cols and "Sales" in self.processed_df.columns:  # Check if 'Sales' exists
             self.processed_df = self.processed_df.sort_values(group_cols + ["Date"])
 
             for lag in [1, 7, 30]:
-                self.processed_df[f"Sales_Lag_{lag}"] = self.processed_df.groupby(
-                    group_cols
-                )["Sales"].shift(lag)
+                self.processed_df[f"Sales_Lag_{lag}"] = self.processed_df.groupby(group_cols)["Sales"].shift(
+                    lag
+                )
 
             for window in [7, 30]:
                 # Need to handle potential issues if a group is smaller than the window
-                self.processed_df[
-                    f"Sales_Rolling_Mean_{window}"
-                ] = self.processed_df.groupby(group_cols)["Sales"].transform(
-                    lambda x: x.rolling(window=window, min_periods=1).mean()
-                )
-                self.processed_df[
-                    f"Sales_Rolling_Std_{window}"
-                ] = self.processed_df.groupby(group_cols)["Sales"].transform(
-                    lambda x: x.rolling(window=window, min_periods=1).std()
-                )
+                self.processed_df[f"Sales_Rolling_Mean_{window}"] = self.processed_df.groupby(group_cols)[
+                    "Sales"
+                ].transform(lambda x: x.rolling(window=window, min_periods=1).mean())
+                self.processed_df[f"Sales_Rolling_Std_{window}"] = self.processed_df.groupby(group_cols)[
+                    "Sales"
+                ].transform(lambda x: x.rolling(window=window, min_periods=1).std())
             logging.info("✓ Lag and rolling features created")
         else:
             logging.info(
@@ -360,30 +314,22 @@ class RetailSalesAnalyzer:
 
         # Encode categorical variables
         # Exclude already created time features like 'Month', 'DayOfWeekName', etc. if they were object type
-        categorical_cols = self.processed_df.select_dtypes(
-            include=["object", "category"]
-        ).columns.tolist()
+        categorical_cols = self.processed_df.select_dtypes(include=["object", "category"]).columns.tolist()
         # Original date column might be object if not parsed, but we assume it's datetime now.
         # Also, ensure we don't re-encode 'Date' if it was string and somehow missed earlier parsing
         # and not to encode helper columns like 'DayOfWeekName', 'Month_Num' if they are objects
         # Let's be specific about which categorical columns to encode if they exist:
-        cols_to_encode = [
-            "Category"
-        ]  # Add other known categorical features like 'Store_Type' if any
+        cols_to_encode = ["Category"]  # Add other known categorical features like 'Store_Type' if any
 
         for col in cols_to_encode:
             if col in self.processed_df.columns:
                 le = LabelEncoder()
-                self.processed_df[f"{col}_Encoded"] = le.fit_transform(
-                    self.processed_df[col].astype(str)
-                )
+                self.processed_df[f"{col}_Encoded"] = le.fit_transform(self.processed_df[col].astype(str))
                 logging.info(f"✓ Encoded {col}")
 
         # Fill missing values created by lag/rolling features (use 0 or mean/median)
         # Backward fill first, then forward fill, then fill with 0 for any remaining NaNs
-        self.processed_df = (
-            self.processed_df.fillna(method="bfill").fillna(method="ffill").fillna(0)
-        )
+        self.processed_df = self.processed_df.fillna(method="bfill").fillna(method="ffill").fillna(0)
 
         logging.info(f"\nFinal processed dataset shape: {self.processed_df.shape}")
         logging.info("Feature engineering completed!")
@@ -404,13 +350,10 @@ class RetailSalesAnalyzer:
         if "Sales" not in self.processed_df.columns:
             logging.info("Error: 'Sales' (target variable) not found in processed data.")
             return None, None, None, None, None
-        if (
-            "Date" not in self.processed_df.columns
-            or not pd.api.types.is_datetime64_any_dtype(self.processed_df["Date"])
+        if "Date" not in self.processed_df.columns or not pd.api.types.is_datetime64_any_dtype(
+            self.processed_df["Date"]
         ):
-            logging.info(
-                "Error: 'Date' column for splitting not found or not datetime in processed data."
-            )
+            logging.info("Error: 'Date' column for splitting not found or not datetime in processed data.")
             return None, None, None, None, None
 
         # Select features for modeling
@@ -428,8 +371,7 @@ class RetailSalesAnalyzer:
                 "Category",
             ]  # Exclude original category if encoded
             and (
-                self.processed_df[col].dtype
-                in [np.int64, np.float64, np.int32, np.float32]  # Numeric
+                self.processed_df[col].dtype in [np.int64, np.float64, np.int32, np.float32]  # Numeric
                 or col.endswith("_Encoded")
             )  # Or is an encoded categorical
         ]
@@ -521,22 +463,22 @@ class RetailSalesAnalyzer:
         self.models = {}  # Reset models
         self.results = {}  # Reset results
 
-        for name, model in models_config.items():
+        for name, model_instance in models_config.items():
             logging.info(f"\nTraining {name}...")
             try:
                 if name == "Linear Regression":
-                    model.fit(X_train_scaled, y_train)
-                    y_pred = model.predict(X_test_scaled)
+                    model_instance.fit(X_train_scaled, y_train)
+                    y_pred = model_instance.predict(X_test_scaled)
                 else:
-                    model.fit(X_train_safe, y_train)  # Use non-scaled for tree models
-                    y_pred = model.predict(X_test_safe)
+                    model_instance.fit(X_train_safe, y_train)  # Use non-scaled for tree models
+                    y_pred = model_instance.predict(X_test_safe)
 
                 mae = mean_absolute_error(y_test, y_pred)
                 mse = mean_squared_error(y_test, y_pred)
                 rmse = np.sqrt(mse)
                 r2 = r2_score(y_test, y_pred)
 
-                self.models[name] = model
+                self.models[name] = model_instance
                 self.results[name] = {
                     "MAE": mae,
                     "MSE": mse,
@@ -545,9 +487,17 @@ class RetailSalesAnalyzer:
                     "predictions": y_pred,
                 }
 
-                logging.info(
-                    f"✓ {name} trained successfully. MAE: {mae:.2f}, RMSE: {rmse:.2f}, R²: {r2:.4f}"
-                )
+                logging.info(f"✓ {name} trained successfully. MAE: {mae:.2f}, RMSE: {rmse:.2f}, R²: {r2:.4f}")
+
+                try:
+                    model_filename = f"{name.replace(' ', '_')}_model.joblib" # e.g., Random_Forest_model.joblib
+                    # We use the save_model function from utils.py,
+                    # which uses Config.MODELS_DIR by default if we modify it, or we pass it.
+                    # For now, let's assume utils.save_model is as defined and handles directory creation.
+                    # We will pass the directory from Config.
+                    save_model(model_instance, model_filename, directory=Config.MODELS_DIR)
+                except Exception as e:
+                    print(f"✗ Error saving model {name}: {e}")
 
             except Exception as e:
                 logging.info(f"✗ Error training {name}: {e}")
@@ -567,9 +517,7 @@ class RetailSalesAnalyzer:
         results_df = pd.DataFrame(self.results).T
         # Ensure only numeric metric columns are selected for sorting and display
         metric_cols = ["MAE", "MSE", "RMSE", "R2"]
-        display_results_df = (
-            results_df[metric_cols].copy().sort_values(by="R2", ascending=False)
-        )
+        display_results_df = results_df[metric_cols].copy().sort_values(by="R2", ascending=False)
         display_results_df = display_results_df.round(4)
 
         logging.info("Model Performance Comparison:")
@@ -618,17 +566,22 @@ class RetailSalesAnalyzer:
             )
 
         plt.tight_layout()
+
+        try:
+            plot_filename = os.path.join(Config.PLOTS_DIR, "model_performance_comparison.png")
+            fig.savefig(plot_filename, dpi=300, bbox_inches='tight')
+            print(f"✓ Model comparison plot saved to {plot_filename}")
+        except Exception as e:
+            print(f"✗ Error saving model comparison plot: {e}")
+
         plt.show()
+        
 
         return best_model_name
 
     def visualize_predictions(self, y_test, best_model_name):
         """Visualize actual vs predicted sales"""
-        if (
-            best_model_name is None
-            or best_model_name not in self.results
-            or y_test is None
-        ):
+        if best_model_name is None or best_model_name not in self.results or y_test is None:
             logging.info(
                 "Cannot visualize predictions: Best model not identified, results missing, or y_test missing."
             )
@@ -713,15 +666,22 @@ class RetailSalesAnalyzer:
         axes[1, 1].axvline(x=0, color="r", linestyle="--")
 
         plt.tight_layout(rect=[0, 0, 1, 0.96])
+
+        try:
+            plot_filename = os.path.join(Config.PLOTS_DIR, f"{best_model_name.replace(' ', '_')}_prediction_visualization.png")
+            fig.savefig(plot_filename, dpi=300, bbox_inches='tight')
+            print(f"✓ Prediction visualization plot for {best_model_name} saved to {plot_filename}")
+        except Exception as e:
+            print(f"✗ Error saving prediction visualization plot: {e}")
+
+
         plt.show()
 
         logging.info(f"\nForecasting Summary ({best_model_name}):")
         logging.info(f"• MAE: ${self.results[best_model_name]['MAE']:.2f}")
         logging.info(f"• RMSE: ${self.results[best_model_name]['RMSE']:.2f}")
         logging.info(f"• R²: {self.results[best_model_name]['R2']:.4f}")
-        logging.info(
-            f"• Mean Prediction Error: ${residuals.mean():.2f}"
-        )  # (Actual - Predicted)
+        logging.info(f"• Mean Prediction Error: ${residuals.mean():.2f}")  # (Actual - Predicted)
         logging.info(f"• Std Prediction Error: ${residuals.std():.2f}")
 
     def run_complete_analysis(self):
@@ -740,9 +700,7 @@ class RetailSalesAnalyzer:
             return
 
         model_data = self.prepare_model_data()
-        if any(
-            data is None for data in model_data
-        ):  # Check if any returned item is None
+        if any(data is None for data in model_data):  # Check if any returned item is None
             logging.info("❌ Halting analysis due to model data preparation issues.")
             return
         X_train, X_test, y_train, y_test, _ = model_data  # Unpack
@@ -754,13 +712,9 @@ class RetailSalesAnalyzer:
 
         best_model_name = self.evaluate_models()
         if best_model_name:
-            self.visualize_predictions(
-                y_test_returned, best_model_name
-            )  # Use y_test from train_models return
+            self.visualize_predictions(y_test_returned, best_model_name)  # Use y_test from train_models return
         else:
-            logging.info(
-                "⚠️ Skipping prediction visualization as no best model was determined."
-            )
+            logging.info("⚠️ Skipping prediction visualization as no best model was determined.")
 
         logging.info("\n" + "=" * 60)
         logging.info("ANALYSIS COMPLETED!")

@@ -12,9 +12,7 @@ try:
     df_favorita = pd.read_csv(FAVORITA_TRAIN_PATH, parse_dates=["date"])
 except FileNotFoundError:
     print(f"ERROR: File not found at {FAVORITA_TRAIN_PATH}")
-    print(
-        "Please make sure the Favorita train.csv is in the correct location and the path is correct."
-    )
+    print("Please make sure the Favorita train.csv is in the correct location and the path is correct.")
     exit()
 except Exception as e:
     print(f"Error loading Favorita train.csv: {e}")
@@ -73,18 +71,14 @@ df_final["Promotion"] = df_final["Promotion"].apply(lambda x: 1 if x > 0 else 0)
 # df_final = df_final[df_final['Store'].isin(stores_to_sample)]
 # print(f"Filtered for stores {stores_to_sample}, resulting in {len(df_final)} rows.")
 
-print(
-    f"Processed data has {len(df_final)} rows and columns: {df_final.columns.tolist()}"
-)
+print(f"Processed data has {len(df_final)} rows and columns: {df_final.columns.tolist()}")
 print("\nFirst 5 rows of the processed data:")
 print(df_final.head())
 
 # --- Save the processed data ---
 try:
     df_final.to_csv(OUTPUT_PROJECT_TRAIN_PATH, index=False)
-    print(
-        f"\nSuccessfully processed and saved the data to: {OUTPUT_PROJECT_TRAIN_PATH}"
-    )
+    print(f"\nSuccessfully processed and saved the data to: {OUTPUT_PROJECT_TRAIN_PATH}")
     print("This file will now be used by your main analysis and dashboard scripts.")
 except Exception as e:
     print(f"\nError saving the processed file: {e}")

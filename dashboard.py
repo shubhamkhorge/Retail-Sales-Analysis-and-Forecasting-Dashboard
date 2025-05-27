@@ -61,9 +61,7 @@ def load_data(file_path):
             df = pd.read_csv(file_path)
             if "Date" not in df.columns:
                 st.error(f"Data file '{file_path}' must contain a 'Date' column.")
-                st.warning(
-                    "Attempting to regenerate sample data due to missing 'Date' column."
-                )
+                st.warning("Attempting to regenerate sample data due to missing 'Date' column.")
                 generate_retail_data(file_path, 10000)  # Smaller dataset for dashboard
                 df = pd.read_csv(file_path)
                 # Generated data's date format is standard (YYYY-MM-DD)
@@ -87,9 +85,7 @@ def load_data(file_path):
             st.warning("Data file not found. Generating sample data...")
             generate_retail_data(file_path, 10000)  # Smaller dataset for dashboard
             df = pd.read_csv(file_path)
-            df["Date"] = pd.to_datetime(
-                df["Date"]
-            )  # Generated data's date format is standard
+            df["Date"] = pd.to_datetime(df["Date"])  # Generated data's date format is standard
             return df
     except Exception as e:
         st.error(f"Error loading data: {e}")
@@ -100,30 +96,22 @@ def load_data(file_path):
 def prepare_dashboard_data(df):
     """Prepare aggregated data for dashboard"""
     # Daily sales
-    daily_sales = (
-        df.groupby("Date")["Sales"].agg(["sum", "mean", "count"]).reset_index()
-    )
+    daily_sales = df.groupby("Date")["Sales"].agg(["sum", "mean", "count"]).reset_index()
     daily_sales.columns = ["Date", "Total_Sales", "Avg_Sales", "Transactions"]
 
     # Monthly sales
     df["YearMonth"] = df["Date"].dt.to_period("M")
-    monthly_sales = (
-        df.groupby("YearMonth")["Sales"].agg(["sum", "mean", "count"]).reset_index()
-    )
+    monthly_sales = df.groupby("YearMonth")["Sales"].agg(["sum", "mean", "count"]).reset_index()
     monthly_sales["YearMonth"] = monthly_sales["YearMonth"].astype(str)
 
     # Store performance
-    store_performance = (
-        df.groupby("Store")["Sales"].agg(["sum", "mean", "count"]).reset_index()
-    )
+    store_performance = df.groupby("Store")["Sales"].agg(["sum", "mean", "count"]).reset_index()
     store_performance.columns = ["Store", "Total_Sales", "Avg_Sales", "Transactions"]
 
     # Category analysis (if exists)
     category_sales = None
     if "Category" in df.columns:
-        category_sales = (
-            df.groupby("Category")["Sales"].agg(["sum", "mean", "count"]).reset_index()
-        )
+        category_sales = df.groupby("Category")["Sales"].agg(["sum", "mean", "count"]).reset_index()
         category_sales.columns = [
             "Category",
             "Total_Sales",
@@ -256,9 +244,7 @@ def run_ml_analysis(df):
         df_copy.to_csv(temp_file, index=False)
 
         # Initialize analyzer
-        analyzer = RetailSalesAnalyzer(
-            temp_file
-        )  # RetailSalesAnalyzer will re-parse Date
+        analyzer = RetailSalesAnalyzer(temp_file)  # RetailSalesAnalyzer will re-parse Date
 
         # Load and process data
         # Instead of analyzer.load_data(), we set df and then call feature_engineering
@@ -298,8 +284,7 @@ def run_ml_analysis(df):
             }
             if (
                 best_y_pred is None
-                or results[name]["R2"]
-                > results[max(results, key=lambda k: results[k]["R2"])]["R2"]
+                or results[name]["R2"] > results[max(results, key=lambda k: results[k]["R2"])]["R2"]
             ):
                 best_y_pred = y_pred_current
 
@@ -363,18 +348,14 @@ def main():
         df_initial = load_data("train.csv")  # load_data handles its own parsing
 
     if df_initial is None or df_initial.empty:
-        st.error(
-            "Could not load data. Please check your file or ensure sample data can be generated."
-        )
+        st.error("Could not load data. Please check your file or ensure sample data can be generated.")
         return
 
     df = df_initial.copy()  # Work with a copy
 
     # Data validation
     with st.sidebar.expander("Data Quality Check"):
-        quality_info = validate_data_quality(
-            df
-        )  # Assuming validate_data_quality is robust
+        quality_info = validate_data_quality(df)  # Assuming validate_data_quality is robust
         st.write(f"**Shape:** {quality_info['shape']}")
         st.write(f"**Missing Values:** {quality_info['missing_values']}")
         st.write(f"**Memory Usage:** {quality_info['memory_mb']:.2f} MB")
@@ -411,9 +392,7 @@ def main():
         return
 
     # Prepare dashboard data
-    daily_sales, monthly_sales, store_performance, category_sales = (
-        prepare_dashboard_data(df_filtered)
-    )
+    daily_sales, monthly_sales, store_performance, category_sales = prepare_dashboard_data(df_filtered)
     summary_metrics = create_summary_metrics(df_filtered)
 
     # Summary metrics
@@ -492,9 +471,7 @@ def main():
             st.warning("Cannot run ML analysis on empty data (check date filters).")
         else:
             with st.spinner("Training models... This may take a moment..."):
-                ml_results, y_test_ml, y_pred_ml = run_ml_analysis(
-                    df_filtered.copy()
-                )  # Pass a copy
+                ml_results, y_test_ml, y_pred_ml = run_ml_analysis(df_filtered.copy())  # Pass a copy
 
                 if ml_results:
                     # Display results
@@ -502,9 +479,7 @@ def main():
 
                     with res_col1:
                         st.subheader("Model Performance")
-                        results_df = pd.DataFrame(ml_results).T.sort_values(
-                            by="R2", ascending=False
-                        )
+                        results_df = pd.DataFrame(ml_results).T.sort_values(by="R2", ascending=False)
                         st.dataframe(results_df, use_container_width=True)
 
                     with res_col2:
@@ -512,19 +487,13 @@ def main():
                         if not results_df.empty:
                             best_model_name = results_df.index[0]
                             st.success(f"**{best_model_name}**")
-                            st.write(
-                                f"R² Score: {ml_results[best_model_name]['R2']:.4f}"
-                            )
+                            st.write(f"R² Score: {ml_results[best_model_name]['R2']:.4f}")
                             st.write(f"MAE: ₹{ml_results[best_model_name]['MAE']:.2f}")
                         else:
                             st.warning("No model results to display.")
 
                     # Prediction vs Actual plot
-                    if (
-                        y_test_ml is not None
-                        and y_pred_ml is not None
-                        and not y_test_ml.empty
-                    ):
+                    if y_test_ml is not None and y_pred_ml is not None and not y_test_ml.empty:
                         fig_pred = go.Figure()
 
                         sample_size = min(500, len(y_test_ml))
@@ -536,9 +505,7 @@ def main():
                             y_test_ml_series = y_test_ml
                             y_pred_ml_series = y_pred_ml
 
-                        sample_indices = y_test_ml_series.sample(
-                            n=sample_size, random_state=42
-                        ).index
+                        sample_indices = y_test_ml_series.sample(n=sample_size, random_state=42).index
 
                         fig_pred.add_trace(
                             go.Scatter(
@@ -596,9 +563,7 @@ def main():
     with dl_col2:
         store_performance_head_str = "No store data available."
         if store_performance is not None and not store_performance.empty:
-            store_performance_head_str = store_performance.nlargest(
-                5, "Total_Sales"
-            ).to_string(index=False)
+            store_performance_head_str = store_performance.nlargest(5, "Total_Sales").to_string(index=False)
 
         summary_report = f"""
         SALES SUMMARY REPORT

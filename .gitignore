@@ -1,6 +1,8 @@
 # Data files - should be generated locally
 train.csv
 temp_dashboard_data.csv
+output/
+
 
 # Python virtual environment
 venv/

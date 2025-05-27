@@ -90,9 +90,7 @@ def generate_retail_data(filename="train.csv", n_records=50000):
 
     print(f"✓ Data saved to {filename}")
     print(f"✓ Dataset shape: {final_df.shape}")
-    print(
-        f"✓ Date range: {final_df['Date'].min().date()} to {final_df['Date'].max().date()}"
-    )
+    print(f"✓ Date range: {final_df['Date'].min().date()} to {final_df['Date'].max().date()}")
     print(f"✓ Total sales: ${final_df['Sales'].sum():,.2f}")
     print(f"✓ Average sales per transaction: ${final_df['Sales'].mean():.2f}")
 
